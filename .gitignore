@@ -17,6 +17,7 @@
 /.next/
 /out/
 .history/
+.vscode/
 
 # production
 /build
