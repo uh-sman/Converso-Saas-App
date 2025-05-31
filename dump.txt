@@ -1,0 +1,243 @@
+// components/FormFieldComponent.tsx
+import React from "react";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Control, FieldValues, Path } from "react-hook-form";
+
+type FieldType = "input" | "text" | "number" | "select" | "textarea";
+
+interface FormFieldComponentProps<T extends FieldValues> {
+  name: Path<T>;
+  control?: Control<T>;
+  label?: string;
+  type: FieldType;
+  placeholder?: string;
+//   options?: string[]; // For select only
+  mapItems?: string[]
+}
+
+export const FormFieldComponent = <T extends FieldValues>({
+  name,
+  control,
+  label,
+  type,
+  placeholder,
+  mapItems = [],
+}: FormFieldComponentProps<T>) => {
+  const renderField = (field: any) => {
+    switch (type) {
+      case "input":
+      case "text":
+      case "number":
+        return (
+          <Input
+            {...field}
+            placeholder={placeholder}
+            type={type}
+            className="input"
+          />
+        );
+
+      case "textarea":
+        return (
+          <Textarea {...field} placeholder={placeholder} className="input" />
+        );
+
+      case "select":
+        return (
+          <Select
+            onValueChange={field.onChange}
+            value={field.value}
+            defaultValue={field.value}
+          >
+            <SelectTrigger className="input capitalize">
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {(mapItems ?? []).map((option) => (
+                <SelectItem key={option} value={option} className="capitalize">
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>{renderField(field)}</FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+};
+
+
+
+
+
+
+
+
+
+
+import React from "react";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Control, FieldValues, Path } from "react-hook-form";
+
+// ===== TYPES =====
+type CommonProps<T extends FieldValues> = {
+  name: Path<T>;
+  label?: string;
+  placeholder?: string;
+};
+
+type ControlledField<T extends FieldValues> = CommonProps<T> & {
+  control: Control<T>;
+  type: "input" | "textarea" | "number";
+};
+
+type SelectField<T extends FieldValues> = CommonProps<T> & {
+  type: "select";
+  mapItems: string[];
+  control?: Control<T>;
+  value?: string;
+  onValueChange?: (val: string) => void;
+};
+
+type FormFieldComponentProps<T extends FieldValues> =
+  | ControlledField<T>
+  | SelectField<T>;
+
+const isSelectField = <T extends FieldValues>(
+  props: FormFieldComponentProps<T>
+): props is SelectField<T> => props.type === "select";
+
+// ===== COMPONENT =====
+export const FormFieldComponent = <T extends FieldValues>(
+  props: FormFieldComponentProps<T>
+) => {
+  const { name, label, placeholder, type } = props;
+
+  // 👉 Case 1: Uncontrolled Select (no react-hook-form)
+  if (isSelectField(props) && !props.control) {
+    return (
+      <FormItem>
+        {label && <FormLabel>{label}</FormLabel>}
+        <FormControl>
+          <Select
+            onValueChange={props.onValueChange}
+            value={props.value}
+            defaultValue={props.value}
+          >
+            <SelectTrigger className="input">
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {props.mapItems.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }
+
+  // 👉 Case 2: Controlled field (input, textarea, or select)
+  if (!props.control) {
+    console.error(
+      `FormFieldComponent: 'control' is required for type '${type}'`
+    );
+    return null;
+  }
+
+  return (
+    <FormField
+      control={props.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          {label && <FormLabel>{label}</FormLabel>}
+          <FormControl>
+            {type === "input" || type === "number" ? (
+              <Input
+                {...field}
+                placeholder={placeholder}
+                type={type}
+                className="input"
+              />
+            ) : type === "textarea" ? (
+              <Textarea
+                {...field}
+                placeholder={placeholder}
+                className="input"
+              />
+            ) : isSelectField(props) ? (
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                defaultValue={field.value}
+              >
+                <SelectTrigger className="input">
+                  <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {props.mapItems.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+};
